@@ -46,6 +46,7 @@ class RestartTimeFinder(object):
         ocn_restart_files.sort()
         fname = os.path.basename(ocn_restart_files[-1])
         minutes_from_start = int(fname.split('.')[1])
+        return self.getStartTime() + datetime.timedelta(minutes=minutes_from_start)
 
 
 ##################################################################################
