@@ -13,12 +13,15 @@ class RestartTimeFinder(object):
     def getAtmRestartTime(self):
         atm_restart_files = glob.glob(str(self.top_dir) + '/wrfrst_d01_*')
         atm_restart_files.sort()
-        fname = os.path.basename(atm_restart_files[-1])
-        _a, _b, year_month_day, hour, minute, second = fname.split('_')
-        year, month, day = year_month_day.split('-')
-        dt = datetime.datetime(year=int(year), month=int(month), day=int(day),
-            hour=int(hour), minute=int(minute), second=int(second))
-        return dt
+        res = []
+        for f in atm_restart_files:
+            fname = os.path.basename(f)
+            _a, _b, year_month_day, hour, minute, second = fname.split('_')
+            year, month, day = year_month_day.split('-')
+            dt = datetime.datetime(year=int(year), month=int(month), day=int(day),
+                hour=int(hour), minute=int(minute), second=int(second))
+            res.append(dt)
+        return res
 
     def getStartTime(self):
 
@@ -41,13 +44,11 @@ class RestartTimeFinder(object):
             return datetime.datetime(**data)
 
 
-    def getOcnRestartTime(self):
-        ocn_restart_files = glob.glob(str(self.top_dir) + '/pickup.[0-9]*.meta')
-        ocn_restart_files.sort()
-        fname = os.path.basename(ocn_restart_files[-1])
-        minutes_from_start = int(fname.split('.')[1])
-        return self.getStartTime() + datetime.timedelta(minutes=minutes_from_start)
-
+    def getOcnRestartTimes(self):
+        ocn_restart_minutes = [int(os.path.basename(f).split('.')[1]) for f in glob.glob(str(self.top_dir) + '/pickup.[0-9]*.meta')]
+        ocn_restart_minutes.sort()
+        st = self.getStartTime()
+        return [st + datetime.timedelta(minutes=m) for m in ocn_restart_minutes]
 
 ##################################################################################
 def test():
@@ -55,7 +56,7 @@ def test():
     rtf = RestartTimeFinder(top_dir)
     print(f'start_time: {rtf.getStartTime()}')
     print(f'atm restart: {rtf.getAtmRestartTime()}')
-    print(f'ocn restart: {rtf.getOcnRestartTime()}')
+    print(f'ocn restart: {rtf.getOcnRestartTimes()}')
 
 
 if __name__ == '__main__':
