@@ -10,7 +10,7 @@ class RestartTimeFinder(object):
     def __init__(self, top_dir : Path='./'):
         self.top_dir = top_dir
 
-    def getAtmRestartTime(self):
+    def getAtmRestartTimes(self):
         atm_restart_files = glob.glob(str(self.top_dir) + '/wrfrst_d01_*')
         atm_restart_files.sort()
         res = []
@@ -50,13 +50,23 @@ class RestartTimeFinder(object):
         st = self.getStartTime()
         return [st + datetime.timedelta(minutes=m) for m in ocn_restart_minutes]
 
+    def getLatestRestartTime(self):
+        ats = set(self.getAtmRestartTimes())
+        ots = set(self.getOcnRestartTimes())
+        res = list(ats.intersection(ots))
+        res.sort()
+        return res
+
+
+
 ##################################################################################
 def test():
     top_dir = '/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI'
     rtf = RestartTimeFinder(top_dir)
     print(f'start_time: {rtf.getStartTime()}')
-    print(f'atm restart: {rtf.getAtmRestartTime()}')
+    print(f'atm restart: {rtf.getAtmRestartTimes()}')
     print(f'ocn restart: {rtf.getOcnRestartTimes()}')
+    print(f'latest restart time: {rtf.getLatestRestartTime()}')
 
 
 if __name__ == '__main__':
