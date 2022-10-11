@@ -1,28 +1,26 @@
-import f90nml
+#import f90nml
 from pathlib import Path
 import datetime
 import glob
 import os.path
 import re
 
-class RestartTimeFinder(obj):
+class RestartTimeFinder(object):
 
     def __init__(self, top_dir : Path='./'):
         self.top_dir = top_dir
 
-
-
-    getAtmRestartTime(self):
-        atm_restart_files = glob.glob(self.top_dir / Path('wrfrst_d01_*'))
+    def getAtmRestartTime(self):
+        atm_restart_files = glob.glob(str(self.top_dir) + '/wrfrst_d01_*')
         atm_restart_files.sort()
         fname = os.path.basename(atm_restart_files[-1])
-        _, _, year, month, day, hour, minute, second = fname.split('_')
+        _a, _b, year_month_day, hour, minute, second = fname.split('_')
+        year, month, day = year_month_day.split('-')
         dt = datetime.datetime(year=int(year), month=int(month), day=int(day),
             hour=int(hour), minute=int(minute), second=int(second))
         return dt
 
-
-    getStartTime(self):
+    def getStartTime(self):
 
         with open(self.top_dir / 'namelist.rc') as f:
             data = {
@@ -41,8 +39,15 @@ class RestartTimeFinder(obj):
             return datetime.datetime(**data)
 
 
-    getOcnRestartTime(self):
+    def getOcnRestartTime(self):
         pass
 
+##################################################################################
+def test():
+    top_dir = '/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI'
+    rtf = RestartTimeFinder(top_dir)
+    atm_restart = rtf.getAtmRestartTime()
+    print(f'atm restart: {atm_restart}')
 
-
+if __name__ == '__main__':
+    test()
