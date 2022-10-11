@@ -22,7 +22,7 @@ class RestartTimeFinder(object):
 
     def getStartTime(self):
 
-        with open(self.top_dir / 'namelist.rc') as f:
+        with open(self.top_dir + '/namelist.rc') as f:
             data = {
                 'year': None,
                 'month': None,
@@ -31,23 +31,31 @@ class RestartTimeFinder(object):
                 'minute': None,
                 'second': None
             }
-            for u in 'Year', 'Month', 'Day', 'Hour', 'Minute', 'Second':
-                for line in f.readlines():
-                    m = re.match(r'^\s*Start' + u, line)
+            for line in f.readlines():
+                if not re.match(r'^\s*Start', line):
+                    continue
+                for u in 'Year', 'Month', 'Day', 'Hour', 'Minute', 'Second':
+                    m = re.match(r'^\s*Start' + u + r'\s*:\s*([0-9]+)', line)
                     if m:
                         data[u.lower()] = int(m.group(1))
             return datetime.datetime(**data)
 
 
     def getOcnRestartTime(self):
-        pass
+        ocn_restart_files = glob.glob(str(self.top_dir) + '/pickup.[0-9]*.meta')
+        ocn_restart_files.sort()
+        fname = os.path.basename(ocn_restart_files[-1])
+        minutes_from_start = int(fname.split('.')[1])
+
 
 ##################################################################################
 def test():
     top_dir = '/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI'
     rtf = RestartTimeFinder(top_dir)
-    atm_restart = rtf.getAtmRestartTime()
-    print(f'atm restart: {atm_restart}')
+    print(f'start_time: {rtf.getStartTime()}')
+    print(f'atm restart: {rtf.getAtmRestartTime()}')
+    print(f'ocn restart: {rtf.getOcnRestartTime()}')
+
 
 if __name__ == '__main__':
     test()
