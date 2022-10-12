@@ -1,4 +1,4 @@
-#import f90nml
+import f90nml
 from pathlib import Path
 import datetime
 import glob
@@ -44,10 +44,24 @@ class RestartTimeFinder(object):
             return datetime.datetime(**data)
 
 
+    def getOcnReferenceTime(self):
+        nml = f90nml.read(self.top_dir + '/data.cal')
+
+        std1 = str(nml['CAL_NML']['startDate_1'])
+        m = re.match(r'^(\d{4})(\d{2})(\d{2})', std1)
+        year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+
+        # TODO: read startDate_2 to get the hours, minute, second
+        hour, minute, second = 0, 0, 0
+        
+        return datetime.datetime(year=year, month=month, day=day,
+            hour=hour, minute=minute, second=second)
+
+
     def getOcnRestartTimes(self):
         ocn_restart_minutes = [int(os.path.basename(f).split('.')[1]) for f in glob.glob(str(self.top_dir) + '/pickup.[0-9]*.meta')]
         ocn_restart_minutes.sort()
-        st = self.getStartTime()
+        st = self.getOcnReferenceTime()
         return [st + datetime.timedelta(minutes=m) for m in ocn_restart_minutes]
 
     def getLatestRestartTime(self):
