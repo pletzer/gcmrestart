@@ -51,9 +51,9 @@ class RestartTimeFinder(object):
         m = re.match(r'^(\d{4})(\d{2})(\d{2})', std1)
         year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
 
-        # TODO: read startDate_2 to get the hours, minute, second
-        hour, minute, second = 0, 0, 0
-        
+        std2 = f"{nml['CAL_NML']['startDate_2']:06d}"
+        hour, minute, second = int(std2[0:2]), int(std2[2:4]), int(std2[4:6])
+
         return datetime.datetime(year=year, month=month, day=day,
             hour=hour, minute=minute, second=second)
 
