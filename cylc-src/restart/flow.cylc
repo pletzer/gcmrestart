@@ -2,9 +2,6 @@
 [scheduling]
     cycling mode = integer
     [[graph]]
-        R1 = """
-            run_model
-        """
         P1 = """
             run_model[-P1] => check_output?
             check_output:succeed? => finish
