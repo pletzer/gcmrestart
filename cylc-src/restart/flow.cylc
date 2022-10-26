@@ -13,13 +13,64 @@
             have_restart:succeed? => edit_input => model
         """
 [runtime]
+    [[GLOBALS]]
+        [[[environment]]]
+            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
+            RUN_DAYS=1
     [[edit_input]]
+        inherit = GLOBALS
         script="""
-        # edit the namelist files
-        # update the start/end times
+        # get the restarting date
+        rst_date=$(python get_restart_date.py)
+        ymd=$(echo $rst_date | awk '{print $1;}')
+        hms=$(echo $rst_date | awk '{print $2;}')
+        year=$(echo $ymd | awk -F '-' '{print $1;}')
+        month=$(echo $ymd | awk -F '-' '{print $2;}')
+        day=$(echo $ymd | awk -F '-' '{print $3;}')
+        hour=$(echo $hms | awk -F ':' '{print $1;}')
+        minute=$(echo $hms | awk -F ':' '{print $2;}')
+        second=$(echo $hms | awk -F ':' '{print $3;}')
+
+        let end_day="$day + $RUN_DAYS"
+        end_day=$(printf "%02d\n" $end_day) # eg 04
+
+        # update the start/end times in the namelist/input files
+        cp namelist.rc namelist.rc_old
+        cp namelist.rc_ori namelist.rc
+        cat namelist.rc_ori | perl -ne "s/StartDay:\s*(\d+)/StartDay: $day/;s/StopDay:\s+(\d+)/StopDay: $end_day/;print;" > namelist.rc
+	
         # make sure to start from a restart file
         """
     [[model]]
+        inherit = GLOBALS
+        platform = maui-xc-slurm
+        [[[directives]]]
+            --job-name=run_coupled_nesi
+            --time=02:00:00
+            --mem-per-cpu=500
+            --ntasks=80
+            --cpus-per-task=1
+            --output=%x-%j.out
+            --error=%x-%j.err
+        script = """
+module switch PrgEnv-cray PrgEnv-intel
+module load cray-netcdf cray-hdf5 cray-parallel-netcdf
+module load ESMF/8.0.0-CrayIntel-19.04b
+
+export NETCDF=$NETCDF_DIR
+export HDF5=$HDF5_DIR
+export CC=cc
+export CXX=CC
+export FC=ftn
+export JASPERLIB=/usr/lib/libjasper.so.1
+export JASPERINC=/usr/include/jasper/jasper.h
+
+# important, required on Maui
+export HDF5_USE_FILE_LOCKING=FALSE
+
+cd $RUN_DIR
+srun  ./esmf_application
+        """
     [[check_output]]
         script = """
         # have all the output files been generated?
