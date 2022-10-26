@@ -3,45 +3,42 @@
     cycling mode = integer
     [[graph]]
         R1 = """
-            model
+            run_model
         """
         P1 = """
-            model[-P1] => check_output?
+            run_model[-P1] => check_output?
             check_output:succeed? => finish
             check_output:fail? => have_restart?
             have_restart:fail? => abort
-            have_restart:succeed? => edit_input => model
+            have_restart:succeed? => edit_input_wrf => edit_input_mitgcm => edit_input_esmf => run_model
         """
 [runtime]
     [[GLOBALS]]
         [[[environment]]]
             RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
             RUN_DAYS=1
-    [[edit_input]]
+    [[edit_input_esmf]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python get_last_restart_date.py)
+        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
+        python edit_esmf_namelist.py $start_date $end_date
+        """
+    [[edit_input_mitgcm]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python get_last_restart_date.py)
+        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
+        python edit_mitgcm_data.py $start_date $end_date
+        """
+    [[edit_input_wrf]]
         inherit = GLOBALS
         script="""
-        # get the restarting date
-        rst_date=$(python get_restart_date.py)
-        ymd=$(echo $rst_date | awk '{print $1;}')
-        hms=$(echo $rst_date | awk '{print $2;}')
-        year=$(echo $ymd | awk -F '-' '{print $1;}')
-        month=$(echo $ymd | awk -F '-' '{print $2;}')
-        day=$(echo $ymd | awk -F '-' '{print $3;}')
-        hour=$(echo $hms | awk -F ':' '{print $1;}')
-        minute=$(echo $hms | awk -F ':' '{print $2;}')
-        second=$(echo $hms | awk -F ':' '{print $3;}')
-
-        let end_day="$day + $RUN_DAYS"
-        end_day=$(printf "%02d\n" $end_day) # eg 04
-
-        # update the start/end times in the namelist/input files
-        cp namelist.rc namelist.rc_old
-        cp namelist.rc_ori namelist.rc
-        cat namelist.rc_ori | perl -ne "s/StartDay:\s*(\d+)/StartDay: $day/;s/StopDay:\s+(\d+)/StopDay: $end_day/;print;" > namelist.rc
-	
-        # make sure to start from a restart file
+        start_date=$(python get_last_restart_date.py)
+        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
+        python edit_wrf_namelist.py $start_date $end_date
         """
-    [[model]]
+    [[run_model]]
         inherit = GLOBALS
         platform = maui-xc-slurm
         [[[directives]]]
@@ -78,6 +75,43 @@ srun  ./esmf_application
         exit $status # simulate success/failure
         """
     [[have_restart]]
+        script = """
+        # get the last restart date
+	last_restart_date=$(python get_last_restart_date.py)
+        status=$(python is_date_valid.py $last_restart_date)
+	if [ $status != 0 ]; then
+            exit 10
+        fi
+
+	# get the start dates from the components input file
+        emsf_start_date=$(python get_esmf_start_date)
+        mitgcm_start_date=$(python get_mitgcm.py_start_date)
+        wrf_start_date=$(python get_wrf_start_date)
+        
+        # check that it is later than the StartYear-StartMonth-StartDay StartHour:StartMinute:StartSecond stored in namelist.rc
+        status=$(python compare_dates.py $last_restart $esmf_start_date)
+        if [ "$status" != 1 ]; then 
+            exit 1
+        fi
+        status=$(python compare_dates.py $last_restart $mitgcm_start_date)
+        if [ "$status" != 1 ]; then 
+            exit 2
+        fi
+        status=$(python compare_dates.py $last_restart $wrf_start_date)
+        if [ "$status" != 1 ]; then
+            exit 3
+        fi
+        # all good
+        exit 0
+    """
     [[finish]]
+        inherit = GLOBALS
+        script = """
+        echo "All done!"
+        """
     [[abort]]
+        inherit = GLOBALS
+        script = """
+        echo "Something wrong happened, take a look into $RUN_DIR". This needs to be debugged.
+        """
 
