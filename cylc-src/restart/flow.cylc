@@ -1,0 +1,32 @@
+[scheduler]
+[scheduling]
+    cycling mode = integer
+    [[graph]]
+        R1 = """
+            model
+        """
+        P1 = """
+            model[-P1] => check_output?
+            check_output:succeed? => finish
+            check_output:fail? => have_restart?
+            have_restart:fail? => abort
+            have_restart:succeed? => edit_input => model
+        """
+[runtime]
+    [[edit_input]]
+        script="""
+        # edit the namelist files
+        # update the start/end times
+        # make sure to start from a restart file
+        """
+    [[model]]
+    [[check_output]]
+        script = """
+        # have all the output files been generated?
+        status=$(($RANDOM % 10))
+        exit $status # simulate success/failure
+        """
+    [[have_restart]]
+    [[finish]]
+    [[abort]]
+

@@ -69,18 +69,15 @@ class RestartTimeFinder(object):
         ots = set(self.getOcnRestartTimes())
         res = list(ats.intersection(ots))
         res.sort()
-        return res
+        return res[-1]
 
 
 
 ##################################################################################
 def test():
-    top_dir = '/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI'
+    top_dir = '/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean'
     rtf = RestartTimeFinder(top_dir)
-    print(f'start_time: {rtf.getStartTime()}')
-    print(f'atm restart: {rtf.getAtmRestartTimes()}')
-    print(f'ocn restart: {rtf.getOcnRestartTimes()}')
-    print(f'latest restart time: {rtf.getLatestRestartTime()}')
+    print(f'{rtf.getLatestRestartTime()}')
 
 
 if __name__ == '__main__':
