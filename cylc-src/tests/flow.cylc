@@ -12,18 +12,20 @@
         [[[environment]]]
             RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
             RUN_DAYS=1
-            BIN_DIR=$PWD/../../bin
-            TMP_DIR=$PWD/../../tmp
+            BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
+            TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
     [[edit_input_esmf]]
         inherit = GLOBALS
         script = """
+        module load cray-python/3.6.5.3
         start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
-        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date=$start_date)
-        python $BIN_DIR/edit_esmf_namelist.py --start=$start_date --end=$end_date > $TMP_DIR/namelist.rc
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > $TMP_DIR/namelist.rc
         """
     [[test_edit_input_esmf]]
         inherit = GLOBALS
         script = """
+        module load cray-python/3.6.5.3
         restart_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
         start_date=$(python $BIN_DIR/get_date_from_esmf_namelist.py --field=Start --file=$TMP_DIR/namelist.rc
 	if [ "$restart_date" != "$start_date" ]; then

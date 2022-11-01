@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     dt = parse_date(args.date)
     dt += datetime.timedelta(days=args.days)
-    print(f'{dt.year}-{dt.month}-{dt.day} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}')
+    print(f'{dt.year:04d}-{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}')
 
 
 if __name__ == '__main__':
