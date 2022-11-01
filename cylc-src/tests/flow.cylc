@@ -27,7 +27,7 @@
         script = """
         module load cray-python/3.6.5.3
         restart_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
-        start_date=$(python $BIN_DIR/get_date_from_esmf_namelist.py --field=Start --file=$TMP_DIR/namelist.rc
+        start_date=$(python $BIN_DIR/get_date_from_esmf_namelist.py --field=Start --file=$TMP_DIR/namelist.rc)
 	if [ "$restart_date" != "$start_date" ]; then
             exit 1
         fi
