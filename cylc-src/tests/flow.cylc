@@ -1,0 +1,117 @@
+[scheduler]
+[scheduling]
+    [[graph]]
+        R1 = """
+            edit_input_esmf => test_edit_input_esmf
+            #edit_input_wrf => test_edit_input_wrf
+            #edit_input_mitgcm => test_edit_input_mitgcm
+            #run_model => check_output => have_restart
+        """
+[runtime]
+    [[GLOBALS]]
+        [[[environment]]]
+            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
+            RUN_DAYS=1
+            BIN_DIR=$PWD/../../bin
+            TMP_DIR=$PWD/../../tmp
+    [[edit_input_esmf]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date=$start_date)
+        python $BIN_DIR/edit_esmf_namelist.py --start=$start_date --end=$end_date > $TMP_DIR/namelist.rc
+        """
+    [[test_edit_input_esmf]]
+        inherit = GLOBALS
+        script = """
+        restart_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
+        start_date=$(python $BIN_DIR/get_start_date_from_esmf_namelist.py $TMP_DIR/namelist.rc
+	if [ "$restart_date" != "$start_date" ]; then
+            exit 1
+        fi
+        exit 0
+        """
+    [[edit_input_mitgcm]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python get_last_restart_date.py)
+        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
+        python edit_mitgcm_data.py $start_date $end_date
+        """
+    [[test_edit_input_mit_gcm]]
+        inherit = GLOBALS
+    [[edit_input_wrf]]
+        inherit = GLOBALS
+        script="""
+        start_date=$(python get_last_restart_date.py)
+        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
+        python edit_wrf_namelist.py $start_date $end_date
+        """
+    [[test_edit_input_wrf]]
+        inherit = GLOBALS
+    [[run_model]]
+        inherit = GLOBALS
+        platform = maui-xc-slurm
+        [[[directives]]]
+            --job-name=run_coupled_nesi
+            --time=02:00:00
+            --mem-per-cpu=500
+            --ntasks=80
+            --cpus-per-task=1
+            --output=%x-%j.out
+            --error=%x-%j.err
+        script = """
+module switch PrgEnv-cray PrgEnv-intel
+module load cray-netcdf cray-hdf5 cray-parallel-netcdf
+module load ESMF/8.0.0-CrayIntel-19.04b
+
+export NETCDF=$NETCDF_DIR
+export HDF5=$HDF5_DIR
+export CC=cc
+export CXX=CC
+export FC=ftn
+export JASPERLIB=/usr/lib/libjasper.so.1
+export JASPERINC=/usr/include/jasper/jasper.h
+
+# important, required on Maui
+export HDF5_USE_FILE_LOCKING=FALSE
+
+cd $RUN_DIR
+srun  ./esmf_application
+        """
+    [[check_output]]
+        script = """
+        # have all the output files been generated?
+        status=$(($RANDOM % 10))
+        exit $status # simulate success/failure
+        """
+    [[have_restart]]
+        script = """
+        # get the last restart date
+	last_restart_date=$(python get_last_restart_date.py)
+        status=$(python is_date_valid.py $last_restart_date)
+	if [ $status != 0 ]; then
+            exit 10
+        fi
+
+	# get the start dates from the components input file
+        emsf_start_date=$(python get_esmf_start_date)
+        mitgcm_start_date=$(python get_mitgcm.py_start_date)
+        wrf_start_date=$(python get_wrf_start_date)
+        
+        # check that it is later than the StartYear-StartMonth-StartDay StartHour:StartMinute:StartSecond stored in namelist.rc
+        status=$(python compare_dates.py $last_restart $esmf_start_date)
+        if [ "$status" != 1 ]; then 
+            exit 1
+        fi
+        status=$(python compare_dates.py $last_restart $mitgcm_start_date)
+        if [ "$status" != 1 ]; then 
+            exit 2
+        fi
+        status=$(python compare_dates.py $last_restart $wrf_start_date)
+        if [ "$status" != 1 ]; then
+            exit 3
+        fi
+        # all good
+        exit 0
+    """
