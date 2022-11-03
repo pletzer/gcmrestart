@@ -3,8 +3,8 @@
     [[graph]]
         R1 = """
             edit_input_esmf => test_edit_input_esmf
-            #edit_input_wrf => test_edit_input_wrf
-            #edit_input_mitgcm => test_edit_input_mitgcm
+            edit_input_wrf => test_edit_input_wrf
+            edit_input_mitgcm => test_edit_input_mitgcm
             #run_model => check_output => have_restart
         """
 [runtime]
@@ -37,18 +37,18 @@
         inherit = GLOBALS
         script = """
         module load cray-python/3.6.5.3
-        start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
-        python edit_mitgcm_data.py --start="$start_date" --end="$end_date" --file=$RUN_DIR/data > $TMP_DIR/data
+        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        python $BIN_DIR/edit_mitgcm_data.py --start="$start_date" --end="$end_date" --file=$RUN_DIR/data > $TMP_DIR/data
         """
-    [[test_edit_input_mit_gcm]]
+    [[test_edit_input_mitgcm]]
         inherit = GLOBALS
     [[edit_input_wrf]]
         inherit = GLOBALS
         script="""
-        start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
-        python edit_wrf_namelist.py $start_date $end_date
+        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
+        python $BIN_DIR/edit_wrf_namelist.py $start_date $end_date
         """
     [[test_edit_input_wrf]]
         inherit = GLOBALS
