@@ -57,11 +57,13 @@ def main():
     nIter0_2 = get_niter0_from_the_latest_ocn_pickup_file(run_dir, type='_seaice')
     # take the oldest of the two
     nIter0 = min(nIter0_1, nIter0_2)
-    
+   
+    # print out the data content with the new nIter0
     replace_nIter0(run_dir + '/data', nIter0)
-    sd = get_start_date(run_dir, nIter0)
-    sd2 = parse_date(args.start)
-    assert(sd == sd2)
+
+    #sd = get_start_date(run_dir, nIter0)
+    #sd2 = parse_date(args.start)
+    #assert(sd == sd2)
 
 if __name__ == '__main__':
     main()
