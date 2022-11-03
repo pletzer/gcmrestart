@@ -37,7 +37,7 @@
         inherit = GLOBALS
         script = """
         module load cray-python/3.6.5.3
-        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        start_date=$(python $BIN_DIR/get_last_restart_date.py  --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         python $BIN_DIR/edit_mitgcm_data.py --start="$start_date" --end="$end_date" --file=$RUN_DIR/data > $TMP_DIR/data
         """
@@ -46,9 +46,9 @@
     [[edit_input_wrf]]
         inherit = GLOBALS
         script="""
-        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        start_date=$(python $BIN_DIR/get_last_restart_date.py  --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
-        python $BIN_DIR/edit_wrf_namelist.py $start_date $end_date
+        python $BIN_DIR/edit_wrf_namelist.py --start=$start_date --end=$end_date --dir=$RUN_DIR
         """
     [[test_edit_input_wrf]]
         inherit = GLOBALS
