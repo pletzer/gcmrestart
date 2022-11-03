@@ -36,9 +36,10 @@
     [[edit_input_mitgcm]]
         inherit = GLOBALS
         script = """
+        module load cray-python/3.6.5.3
         start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
-        python edit_mitgcm_data.py $start_date $end_date
+        end_date=$(python add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        python edit_mitgcm_data.py --start="$start_date" --end="$end_date" --file=$RUN_DIR/data > $TMP_DIR/data
         """
     [[test_edit_input_mit_gcm]]
         inherit = GLOBALS
