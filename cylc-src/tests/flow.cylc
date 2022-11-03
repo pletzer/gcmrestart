@@ -47,8 +47,8 @@
         inherit = GLOBALS
         script="""
         start_date=$(python $BIN_DIR/get_last_restart_date.py  --dir=$RUN_DIR)
-        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date=$start_date)
-        python $BIN_DIR/edit_wrf_namelist.py --start=$start_date --end=$end_date --file=$RUN_DIR/namelist.input > $TMP_DIR/namelist.input
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        python $BIN_DIR/edit_wrf_namelist.py --start="$start_date" --end="$end_date" --file=$RUN_DIR/namelist.input > $TMP_DIR/namelist.input
         """
     [[test_edit_input_wrf]]
         inherit = GLOBALS
