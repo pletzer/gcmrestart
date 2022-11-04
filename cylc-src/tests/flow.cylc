@@ -10,14 +10,18 @@
 [runtime]
     [[GLOBALS]]
         [[[environment]]]
-            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
             RUN_DAYS=1
-            BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
-            TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
+            TOP_DIR=/Users/pletzera/gcmrestart
+            RUN_DIR=$TOP_DIR/run
+            BIN_DIR=$TOP_DIR/bin
+            TMP_DIR=$TOP_DIR/tmp
+            #RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
+            #BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
+            #TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
     [[edit_input_esmf]]
         inherit = GLOBALS
         script = """
-        module load cray-python/3.6.5.3
+        #module load cray-python/3.6.5.3
         start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > $TMP_DIR/namelist.rc
@@ -25,7 +29,7 @@
     [[test_edit_input_esmf]]
         inherit = GLOBALS
         script = """
-        module load cray-python/3.6.5.3
+        #module load cray-python/3.6.5.3
         restart_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
         start_date=$(python $BIN_DIR/get_date_from_esmf_namelist.py --field=Start --file=$TMP_DIR/namelist.rc)
 	if [ "$restart_date" != "$start_date" ]; then
@@ -36,7 +40,7 @@
     [[edit_input_mitgcm]]
         inherit = GLOBALS
         script = """
-        module load cray-python/3.6.5.3
+        #module load cray-python/3.6.5.3
         start_date=$(python $BIN_DIR/get_last_restart_date.py  --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         python $BIN_DIR/edit_mitgcm_data.py --start="$start_date" --file=$RUN_DIR/data > $TMP_DIR/data
@@ -53,68 +57,5 @@
     [[test_edit_input_wrf]]
         inherit = GLOBALS
     [[run_model]]
-        inherit = GLOBALS
-        platform = maui-xc-slurm
-        [[[directives]]]
-            --job-name=run_coupled_nesi
-            --time=02:00:00
-            --mem-per-cpu=500
-            --ntasks=80
-            --cpus-per-task=1
-            --output=%x-%j.out
-            --error=%x-%j.err
-        script = """
-module switch PrgEnv-cray PrgEnv-intel
-module load cray-netcdf cray-hdf5 cray-parallel-netcdf
-module load ESMF/8.0.0-CrayIntel-19.04b
-
-export NETCDF=$NETCDF_DIR
-export HDF5=$HDF5_DIR
-export CC=cc
-export CXX=CC
-export FC=ftn
-export JASPERLIB=/usr/lib/libjasper.so.1
-export JASPERINC=/usr/include/jasper/jasper.h
-
-# important, required on Maui
-export HDF5_USE_FILE_LOCKING=FALSE
-
-cd $RUN_DIR
-srun  ./esmf_application
-        """
     [[check_output]]
-        script = """
-        # have all the output files been generated?
-        status=$(($RANDOM % 10))
-        exit $status # simulate success/failure
-        """
     [[have_restart]]
-        script = """
-        # get the last restart date
-	last_restart_date=$(python get_last_restart_date.py)
-        status=$(python is_date_valid.py $last_restart_date)
-	if [ $status != 0 ]; then
-            exit 10
-        fi
-
-	# get the start dates from the components input file
-        emsf_start_date=$(python get_esmf_start_date)
-        mitgcm_start_date=$(python get_mitgcm.py_start_date)
-        wrf_start_date=$(python get_wrf_start_date)
-        
-        # check that it is later than the StartYear-StartMonth-StartDay StartHour:StartMinute:StartSecond stored in namelist.rc
-        status=$(python compare_dates.py $last_restart $esmf_start_date)
-        if [ "$status" != 1 ]; then 
-            exit 1
-        fi
-        status=$(python compare_dates.py $last_restart $mitgcm_start_date)
-        if [ "$status" != 1 ]; then 
-            exit 2
-        fi
-        status=$(python compare_dates.py $last_restart $wrf_start_date)
-        if [ "$status" != 1 ]; then
-            exit 3
-        fi
-        # all good
-        exit 0
-    """
