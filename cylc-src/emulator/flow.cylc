@@ -1,0 +1,80 @@
+[scheduler]
+[scheduling]
+    cycling mode = integer
+    [[graph]]
+        P1 = """
+            run_model[-P1] => check_output?
+            check_output:succeed? => finish
+            check_output:fail? => have_restart?
+            have_restart:fail? => abort
+            have_restart:succeed? => edit_input_wrf => edit_input_mitgcm => edit_input_esmf => run_model
+        """
+[runtime]
+    [[GLOBALS]]
+        [[[environment]]]
+            RUN_DAYS=1
+            TOP_DIR=/Users/pletzera/gcmrestart
+            RUN_DIR=$TOP_DIR/run
+            BIN_DIR=$TOP_DIR/bin
+            TMP_DIR=$TOP_DIR/tmp
+            #RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
+            #BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
+            #TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
+    [[edit_input_esmf]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        cp $RUN_DIR/namelist.rc $TMP_DIR
+        python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > toto.txt
+        mv toto.txt $RUN_DIR/namelist.rc
+        diff $RUN_DIR/namelist.rc $TMP_DIR/namelist.rc
+        """
+    [[edit_input_mitgcm]]
+        inherit = GLOBALS
+        script = """
+        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
+        cp $RUN_DIR/data $TMP_DIR
+        python $BIN_DIR/edit_mitgcm_data.py --file=$RUN_DIR/data --start="$start_date" > toto.txt
+        mv toto.txt $RUN_DIR/data
+        diff $RUN_DIR/data $TMP_DIR/data
+        """
+    [[edit_input_wrf]]
+        inherit = GLOBALS
+        script="""
+        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
+        cp $RUN_DIR/namelist.input $TMP_DIR
+        python $BIN_DIR/edit_wrf_namelist.py --file=$RUN_DIR/namelist.input --start="$start_date" --end="$end_date" > toto.txt
+        mv toto.txt $RUN_DIR/namelist.input
+        diff $RUN_DIR/namelist.input $TMP_DIR/namelist.input
+        """
+    [[run_model]]
+        inherit = GLOBALS
+        script = """
+        # create wrf restart file
+        
+        # create mitgcm restart files
+        
+        """
+    [[check_output]]
+        script = """
+        # have all the output files been generated?
+        status=$(($RANDOM % 10))
+        exit $status # simulate success/failure
+        """
+    [[have_restart]]
+        script = """
+    """
+    [[finish]]
+        inherit = GLOBALS
+        script = """
+        echo "All done!"
+        """
+    [[abort]]
+        inherit = GLOBALS
+        script = """
+        echo "Something wrong happened, take a look into $RUN_DIR". This needs to be debugged.
+        """
+
