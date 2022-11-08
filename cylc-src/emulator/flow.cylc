@@ -53,9 +53,40 @@
     [[run_model]]
         inherit = GLOBALS
         script = """
-        # create wrf restart file
+        # get the start date from the wrf namelist
+        f="$RUN_DIR/namelist.input"
+        start_year=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_year\s*=\s*(\d+\.?)\s*,")
+        start_month=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_month\s*=\s*(\d+\.?)\s*,")
+        start_day=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_day\s*=\s*(\d+\.?)\s*,")
+        start_hour=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_hour\s*=\s*(\d+\.?)\s*,")
+
+        # get the start number of minutes from the data file
+        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern-="^\s*nIter0\s*=(\d+\.?)\s*,")
         
-        # create mitgcm restart files
+        # get the start date from data.cal
+        startDate1_year=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*(\d{4})\d+\s*,")
+        startDate1_month=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*\d{4}(\d{2})\d+\s*,")
+        startDate1_day=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*\d{6}(\d{2})\s*,")
+
+        # check that mitgcm and wrf agree on the start date
+        wrf_date="${start_year}-${start_month}-${start_day} ${start_hour}:00:00"
+        mitgcm_date="${startDate1_year}-${startDate1_month}-${startDate1_day} 00:00:00"
+        # add the minutes
+        mitgcm_date=$(python add_minutes_to_date.py --date="$mitgcm_date" --minutes=nIter0)
+        
+        if [ "$wrf_date" != "$mitgcm_date" ]; then
+            echo "ERROR: starting dates do not match wrf: $wrf_date mitgcm: $mitgcm_date"
+            exit 1
+        fi
+
+        # step in time
+        for h in seq 1 5; do
+            d=$(python add_hours_to_date.py --date="$wrf_date" --hours="$h")
+            # write wrf restart file
+            python touch_wrf_restart_file.py --run_dir="$RUN_DIR" --date="$d"
+            # write mitgcm file
+            python touch_mitgcm_restart_files.py --run_dir="$RUN_DIR" --date="$d"
+        done
         
         """
     [[check_output]]
