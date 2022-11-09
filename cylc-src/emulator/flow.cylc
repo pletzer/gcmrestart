@@ -75,7 +75,7 @@
         wrf_date="${start_year}-${start_month}-${start_day} ${start_hour}:00:00"
         mitgcm_date="${startDate1_year}-${startDate1_month}-${startDate1_day} 00:00:00"
         # add the minutes
-        mitgcm_date=$(python add_minutes_to_date.py --date="$mitgcm_date" --minutes=nIter0)
+        mitgcm_date=$(python $BIN_DIR/add_minutes_to_date.py --date="$mitgcm_date" --minutes=nIter0)
         
         if [ "$wrf_date" != "$mitgcm_date" ]; then
             echo "ERROR: starting dates do not match wrf: $wrf_date mitgcm: $mitgcm_date"
@@ -84,11 +84,12 @@
 
         # step in time
         for h in seq 1 5; do
-            d=$(python add_hours_to_date.py --date="$wrf_date" --hours="$h")
+            echo "...step h = $h"
+            d=$(python $BIN_DIR/add_hours_to_date.py --date="$wrf_date" --hours="$h")
             # write wrf restart file
-            python touch_wrf_restart_file.py --run_dir="$RUN_DIR" --date="$d"
+            python $BIN_DIR/touch_wrf_restart_file.py --run_dir="$RUN_DIR" --date="$d"
             # write mitgcm file
-            python touch_mitgcm_restart_files.py --run_dir="$RUN_DIR" --date="$d"
+            python $BIN_DIR/touch_mitgcm_restart_files.py --run_dir="$RUN_DIR" --date="$d"
         done
         
         """
