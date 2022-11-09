@@ -1,7 +1,7 @@
 import argparse
 import datetime
 import re
-from mathlib import Path
+from pathlib import Path
 
 def parse_date(str_date):
     m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)', str_date)

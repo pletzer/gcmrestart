@@ -1,10 +1,13 @@
 import argparse
 import datetime
 import re
-from mathlib import Path
+from pathlib import Path
 
 def parse_date(str_date):
-    m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)', str_date)
+    m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)_(\d\d)_(\d\d)_(\d\d)', str_date)
+    if not m:
+        msg = f"ERROR dtae {str_date} does not match pattern '\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)'"
+        raise RuntimeError(msg)
     year, month, day, hour, minute, second = int(m.group(1)), \
                                              int(m.group(2)), \
                                              int(m.group(3)), \
@@ -14,6 +17,7 @@ def parse_date(str_date):
     return datetime.datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
 
 def get_num_minutes(run_dir, dt):
+    pat = re.compile(r'^\s*startDate_1\s*=\s*(\d{8})')
     with open(run_dir + '/data.cal', 'r') as f:
         for line in f.readlines():
             m = re.match(pat, line)
@@ -24,12 +28,12 @@ def get_num_minutes(run_dir, dt):
                 day = int(date[6:])
                 d0 = datetime.datetime(year=year, month=month, day=day)
                 delta_t = dt - d0
-                return delta_t.minutes
+                return int(delta_t.total_seconds() / 60) # minutes
     return None
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", type=str, default='', help="date in YYYY-MM-DD HH:mm:ss format")
+    parser.add_argument("--date", type=str, default='', help="date in YYYY-MM-DD_HH_mm_ss format")
     parser.add_argument("--run_dir", type=str, default='', help="run directory")
     args = parser.parse_args()
     dt = parse_date(args.date)
@@ -39,7 +43,8 @@ def main():
 
     for sfx in "meta", "data":
         for prfx in "pickup", "pickup_seaice":
-            f = f'{args.run_dir}/pickup.{n:010d}.{sfx}'
+            filename = f'{args.run_dir}/{prfx}.{n:010d}.{sfx}'
+            print(filename)
             Path(filename).touch()
 
 
