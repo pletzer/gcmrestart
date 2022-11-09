@@ -4,9 +4,9 @@ import re
 from pathlib import Path
 
 def parse_date(str_date):
-    m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)_(\d\d)_(\d\d)_(\d\d)', str_date)
+    m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)', str_date)
     if not m:
-        msg = f"ERROR dtae {str_date} does not match pattern '\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)'"
+        msg = f"ERROR date {str_date} does not match pattern '\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d):'"
         raise RuntimeError(msg)
     year, month, day, hour, minute, second = int(m.group(1)), \
                                              int(m.group(2)), \

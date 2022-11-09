@@ -64,7 +64,7 @@
         start_hour=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_hour\s*=\s*(\d+\.?)\s*,")
 
         # get the start number of minutes from the data file
-        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern="^\s*nIter0\s*=(\d+\.?)\s*,")
+        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern="^\s*nIter0\s*=\s*(\d+)\.?\s*,")
         
         # get the start date from data.cal
         startDate1_year=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*(\d{4})\d+\s*,")
@@ -75,7 +75,7 @@
         wrf_date="${start_year}-${start_month}-${start_day} ${start_hour}:00:00"
         mitgcm_date="${startDate1_year}-${startDate1_month}-${startDate1_day} 00:00:00"
         # add the minutes
-        mitgcm_date=$(python $BIN_DIR/add_minutes_to_date.py --date="$mitgcm_date" --minutes=$nIter0)
+        mitgcm_date=$(python $BIN_DIR/add_minutes_to_date.py --date="$mitgcm_date" --minutes=${nIter0})
         
         if [ "$wrf_date" != "$mitgcm_date" ]; then
             echo "ERROR: starting dates do not match wrf: $wrf_date mitgcm: $mitgcm_date"
@@ -83,7 +83,7 @@
         fi
 
         # step in time
-        for h in seq 1 5; do
+        for h in $(seq 1 5); do
             echo "...step h = $h"
             d=$(python $BIN_DIR/add_hours_to_date.py --date="$wrf_date" --hours="$h")
             # write wrf restart file
