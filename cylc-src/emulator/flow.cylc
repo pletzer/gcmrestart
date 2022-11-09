@@ -23,32 +23,35 @@
     [[edit_input_esmf]]
         inherit = GLOBALS
         script = """
-        start_date=$(python $BIN_DIR/get_last_restart_date.py)
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         cp $RUN_DIR/namelist.rc $TMP_DIR
         python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > toto.txt
         mv toto.txt $RUN_DIR/namelist.rc
         diff $RUN_DIR/namelist.rc $TMP_DIR/namelist.rc
+        exit 0
         """
     [[edit_input_mitgcm]]
         inherit = GLOBALS
         script = """
-        start_date=$(python $BIN_DIR/get_last_restart_date.py)
-        end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         cp $RUN_DIR/data $TMP_DIR
         python $BIN_DIR/edit_mitgcm_data.py --file=$RUN_DIR/data --start="$start_date" > toto.txt
         mv toto.txt $RUN_DIR/data
         diff $RUN_DIR/data $TMP_DIR/data
+        exit 0
         """
     [[edit_input_wrf]]
         inherit = GLOBALS
         script="""
-        start_date=$(python $BIN_DIR/get_last_restart_date.py)
-        end_date=$(python $BIN_DIR/add_days_to_date.py $RUN_DAYS $start_date)
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR/)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
         cp $RUN_DIR/namelist.input $TMP_DIR
         python $BIN_DIR/edit_wrf_namelist.py --file=$RUN_DIR/namelist.input --start="$start_date" --end="$end_date" > toto.txt
         mv toto.txt $RUN_DIR/namelist.input
         diff $RUN_DIR/namelist.input $TMP_DIR/namelist.input
+        exit 0
         """
     [[run_model]]
         inherit = GLOBALS
@@ -61,7 +64,7 @@
         start_hour=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_hour\s*=\s*(\d+\.?)\s*,")
 
         # get the start number of minutes from the data file
-        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern-="^\s*nIter0\s*=(\d+\.?)\s*,")
+        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern="^\s*nIter0\s*=(\d+\.?)\s*,")
         
         # get the start date from data.cal
         startDate1_year=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*(\d{4})\d+\s*,")
@@ -90,14 +93,16 @@
         
         """
     [[check_output]]
-        script = """
-        # have all the output files been generated?
-        status=$(($RANDOM % 10))
-        exit $status # simulate success/failure
-        """
-    [[have_restart]]
-        script = """
+    inherit = GLOBALS
+    script = """
+    if [ -f "$RUN_DIR/wrfrst_d01_2014-01-06_00_00_00" ]; then
+        # ok
+        exit 0
+    fi
+    # error
+    exit 1
     """
+    [[have_restart]]
     [[finish]]
         inherit = GLOBALS
         script = """
