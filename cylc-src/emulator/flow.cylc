@@ -28,8 +28,6 @@
         cp $RUN_DIR/namelist.rc $TMP_DIR
         python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > toto.txt
         mv toto.txt $RUN_DIR/namelist.rc
-        diff $RUN_DIR/namelist.rc $TMP_DIR/namelist.rc
-        exit 0
         """
     [[edit_input_mitgcm]]
         inherit = GLOBALS
@@ -39,8 +37,6 @@
         cp $RUN_DIR/data $TMP_DIR
         python $BIN_DIR/edit_mitgcm_data.py --file=$RUN_DIR/data --start="$start_date" > toto.txt
         mv toto.txt $RUN_DIR/data
-        diff $RUN_DIR/data $TMP_DIR/data
-        exit 0
         """
     [[edit_input_wrf]]
         inherit = GLOBALS
@@ -50,8 +46,6 @@
         cp $RUN_DIR/namelist.input $TMP_DIR
         python $BIN_DIR/edit_wrf_namelist.py --file=$RUN_DIR/namelist.input --start="$start_date" --end="$end_date" > toto.txt
         mv toto.txt $RUN_DIR/namelist.input
-        diff $RUN_DIR/namelist.input $TMP_DIR/namelist.input
-        exit 0
         """
     [[run_model]]
         inherit = GLOBALS
