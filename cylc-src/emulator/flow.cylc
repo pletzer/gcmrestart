@@ -7,7 +7,10 @@
             check_output:succeed? => finish
             check_output:fail? => have_restart?
             have_restart:fail? => abort
-            have_restart:succeed? => edit_input_wrf => edit_input_mitgcm => edit_input_esmf => run_model
+            have_restart:succeed? => edit_input_wrf & edit_input_mitgcm & edit_input_esmf
+            edit_input_wrf => run_model
+            edit_input_mitgcm => run_model
+            edit_input_esmf => run_model
         """
 [runtime]
     [[GLOBALS]]
@@ -34,7 +37,6 @@
         script = """
         start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
         end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
-        cp $RUN_DIR/data $TMP_DIR
         python $BIN_DIR/edit_mitgcm_data.py --file=$RUN_DIR/data --start="$start_date" > toto.txt
         mv toto.txt $RUN_DIR/data
         """
@@ -90,7 +92,8 @@
     [[check_output]]
     inherit = GLOBALS
     script = """
-    if [ -f "$RUN_DIR/wrfrst_d01_2014-01-06_00_00_00" ]; then
+    # should check wrfout instead
+    if [ -f "$RUN_DIR/wrfrst_d01_2014-01-08_00_00_00" ]; then
         # ok
         exit 0
     fi
