@@ -1,0 +1,27 @@
+[scheduler]
+[scheduling]
+    [[graph]]
+        R1 = """
+           job_mahuika => job_maui
+        """
+[runtime]
+    [[job_mahuika]]
+        platform = mahuika-slurm
+        script = """
+srun echo "running on mahuika: $(date)"
+        """
+        [[[directives]]]
+            --job-name=job_mahuika
+            --time=00:01:00
+    [[job_maui]]
+        platform = maui-xc-slurm
+        script = """
+srun echo "running on maui: $(date)" 
+        """
+        [[[directives]]]
+            --job-name=job_maui
+            --time=00:01:00
+            --ntasks=1
+            --cpus-per-task=1
+            --output=%x-%j.out
+            --error=%x-%j.err

@@ -53,14 +53,6 @@
     [[run_model]]
         inherit = GLOBALS
         platform = maui-xc-slurm
-        [[[directives]]]
-            --job-name=run_coupled_nesi
-            --time=02:00:00
-            --mem-per-cpu=500
-            --ntasks=80
-            --cpus-per-task=1
-            --output=%x-%j.out
-            --error=%x-%j.err
         script = """
 module switch PrgEnv-cray PrgEnv-intel
 module load cray-netcdf cray-hdf5 cray-parallel-netcdf
@@ -80,6 +72,14 @@ export HDF5_USE_FILE_LOCKING=FALSE
 cd $RUN_DIR
 srun  ./esmf_application
         """
+        [[[directives]]]
+            --job-name=run_coupled_nesi
+            --time=02:00:00
+            --mem-per-cpu=500
+            --ntasks=80
+            --cpus-per-task=1
+            --output=%x-%j.out
+            --error=%x-%j.err
     [[check_output]]
     inherit = GLOBALS
     script = """
