@@ -7,33 +7,48 @@
             check_output:succeed? => finish
             check_output:fail? => have_restart?
             have_restart:fail? => abort
-            have_restart:succeed? => edit_input_wrf => edit_input_mitgcm => edit_input_esmf => run_model
+            have_restart:succeed? => edit_input_wrf & edit_input_mitgcm & edit_input_esmf
+            edit_input_wrf => run_model
+            edit_input_mitgcm => run_model
+            edit_input_esmf => run_model
         """
 [runtime]
     [[GLOBALS]]
         [[[environment]]]
-            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
             RUN_DAYS=1
+            #TOP_DIR=/Users/pletzera/gcmrestart
+            TOP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart
+            BIN_DIR=$TOP_DIR/bin
+            TMP_DIR=$TOP_DIR/tmp
+            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_test
+            #BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
+            #TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
+            FINAL_FILE="$RUN_DIR/wrfout_d01_2014-01-03_00_00_00"
     [[edit_input_esmf]]
         inherit = GLOBALS
         script = """
-        start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
-        python edit_esmf_namelist.py $start_date $end_date
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        cp $RUN_DIR/namelist.rc $TMP_DIR
+        python $BIN_DIR/edit_esmf_namelist.py --file=$RUN_DIR/namelist.rc --start="$start_date" --end="$end_date" > toto.txt
+        mv toto.txt $RUN_DIR/namelist.rc
         """
     [[edit_input_mitgcm]]
         inherit = GLOBALS
         script = """
-        start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
-        python edit_mitgcm_data.py $start_date $end_date
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        python $BIN_DIR/edit_mitgcm_data.py --file=$RUN_DIR/data --start="$start_date" > toto.txt
+        mv toto.txt $RUN_DIR/data
         """
     [[edit_input_wrf]]
         inherit = GLOBALS
         script="""
-        start_date=$(python get_last_restart_date.py)
-        end_date=$(python add_days_to_date.py $RUN_DAYS $start_date)
-        python edit_wrf_namelist.py $start_date $end_date
+        start_date=$(python $BIN_DIR/get_last_restart_date.py --dir=$RUN_DIR/)
+        end_date=$(python $BIN_DIR/add_days_to_date.py --days=$RUN_DAYS --date="$start_date")
+        cp $RUN_DIR/namelist.input $TMP_DIR
+        python $BIN_DIR/edit_wrf_namelist.py --file=$RUN_DIR/namelist.input --start="$start_date" --end="$end_date" > toto.txt
+        mv toto.txt $RUN_DIR/namelist.input
         """
     [[run_model]]
         inherit = GLOBALS
@@ -66,41 +81,16 @@ cd $RUN_DIR
 srun  ./esmf_application
         """
     [[check_output]]
-        script = """
-        # have all the output files been generated?
-        status=$(($RANDOM % 10))
-        exit $status # simulate success/failure
-        """
-    [[have_restart]]
-        script = """
-        # get the last restart date
-	last_restart_date=$(python get_last_restart_date.py)
-        status=$(python is_date_valid.py $last_restart_date)
-	if [ $status != 0 ]; then
-            exit 10
-        fi
-
-	# get the start dates from the components input file
-        emsf_start_date=$(python get_esmf_start_date)
-        mitgcm_start_date=$(python get_mitgcm.py_start_date)
-        wrf_start_date=$(python get_wrf_start_date)
-        
-        # check that it is later than the StartYear-StartMonth-StartDay StartHour:StartMinute:StartSecond stored in namelist.rc
-        status=$(python compare_dates.py $last_restart $esmf_start_date)
-        if [ "$status" != 1 ]; then 
-            exit 1
-        fi
-        status=$(python compare_dates.py $last_restart $mitgcm_start_date)
-        if [ "$status" != 1 ]; then 
-            exit 2
-        fi
-        status=$(python compare_dates.py $last_restart $wrf_start_date)
-        if [ "$status" != 1 ]; then
-            exit 3
-        fi
-        # all good
+    inherit = GLOBALS
+    script = """
+    if [ -f "$FINAL_FILE" ]; then
+        # ok
         exit 0
+    fi
+    # error
+    exit 1
     """
+    [[have_restart]]
     [[finish]]
         inherit = GLOBALS
         script = """
