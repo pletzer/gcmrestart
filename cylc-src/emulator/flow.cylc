@@ -18,12 +18,12 @@
             RUN_DAYS=1
             #TOP_DIR=/Users/pletzera/gcmrestart
             TOP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart
+            RUN_DIR=$TOP_DIR/run
             BIN_DIR=$TOP_DIR/bin
             TMP_DIR=$TOP_DIR/tmp
-            RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_test
+            #RUN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean
             #BIN_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/bin
             #TMP_DIR=/nesi/nobackup/pletzera/workflow_restart_capability/runCase_NESI_clean/gcmrestart/tmp
-            FINAL_FILE="$RUN_DIR/wrfout_d01_2014-01-03_00_00_00"
     [[edit_input_esmf]]
         inherit = GLOBALS
         script = """
@@ -52,38 +52,49 @@
         """
     [[run_model]]
         inherit = GLOBALS
-        platform = maui-xc-slurm
         script = """
-module switch PrgEnv-cray PrgEnv-intel
-module load cray-netcdf cray-hdf5 cray-parallel-netcdf
-module load ESMF/8.0.0-CrayIntel-19.04b
+        # get the start date from the wrf namelist
+        f="$RUN_DIR/namelist.input"
+        start_year=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_year\s*=\s*(\d+\.?)\s*,")
+        start_month=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_month\s*=\s*(\d+\.?)\s*,")
+        start_day=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_day\s*=\s*(\d+\.?)\s*,")
+        start_hour=$(python $BIN_DIR/extract_field.py --file=$f --pattern="^\s*start_hour\s*=\s*(\d+\.?)\s*,")
 
-export NETCDF=$NETCDF_DIR
-export HDF5=$HDF5_DIR
-export CC=cc
-export CXX=CC
-export FC=ftn
-export JASPERLIB=/usr/lib/libjasper.so.1
-export JASPERINC=/usr/include/jasper/jasper.h
+        # get the start number of minutes from the data file
+        nIter0=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data --pattern="^\s*nIter0\s*=\s*(\d+)\.?\s*,")
+        
+        # get the start date from data.cal
+        startDate1_year=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*(\d{4})\d+\s*,")
+        startDate1_month=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*\d{4}(\d{2})\d+\s*,")
+        startDate1_day=$(python $BIN_DIR/extract_field.py --file=$RUN_DIR/data.cal --pattern="^\s*startDate_1\s*=\s*\d{6}(\d{2})\s*,")
 
-# important, required on Maui
-export HDF5_USE_FILE_LOCKING=FALSE
+        # check that mitgcm and wrf agree on the start date
+        wrf_date="${start_year}-${start_month}-${start_day} ${start_hour}:00:00"
+        mitgcm_date="${startDate1_year}-${startDate1_month}-${startDate1_day} 00:00:00"
+        # add the minutes
+        mitgcm_date=$(python $BIN_DIR/add_minutes_to_date.py --date="$mitgcm_date" --minutes=${nIter0})
+        
+        if [ "$wrf_date" != "$mitgcm_date" ]; then
+            echo "ERROR: starting dates do not match wrf: $wrf_date mitgcm: $mitgcm_date"
+            exit 1
+        fi
 
-cd $RUN_DIR
-srun  ./esmf_application
+        # step in time
+        for h in $(seq 1 5); do
+            echo "...step h = $h"
+            d=$(python $BIN_DIR/add_hours_to_date.py --date="$wrf_date" --hours="$h")
+            # write wrf restart file
+            python $BIN_DIR/touch_wrf_restart_file.py --run_dir="$RUN_DIR" --date="$d"
+            # write mitgcm file
+            python $BIN_DIR/touch_mitgcm_restart_files.py --run_dir="$RUN_DIR" --date="$d"
+        done
+        
         """
-        [[[directives]]]
-            --job-name=run_coupled_nesi
-            --time=02:00:00
-            --mem-per-cpu=500
-            --ntasks=80
-            --cpus-per-task=1
-            --output=%x-%j.out
-            --error=%x-%j.err
     [[check_output]]
     inherit = GLOBALS
     script = """
-    if [ -f "$FINAL_FILE" ]; then
+    # should check wrfout instead
+    if [ -f "$RUN_DIR/wrfrst_d01_2014-01-08_00_00_00" ]; then
         # ok
         exit 0
     fi

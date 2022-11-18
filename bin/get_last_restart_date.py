@@ -13,6 +13,8 @@ class RestartTimeFinder(object):
 
     def getAtmRestartTimes(self):
         atm_restart_files = glob.glob(str(self.top_dir) + '/wrfrst_d01_*')
+        if len(atm_restart_files) == 0:
+        	print(f'Warning: no atm restart files in {str(self.top_dir)}')
         atm_restart_files.sort()
         res = []
         for f in atm_restart_files:

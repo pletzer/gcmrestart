@@ -1,13 +1,10 @@
 import argparse
 import datetime
 import re
+from pathlib import Path
 
 def parse_date(str_date):
-    m = re.match(r'^\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)', str_date)
-    if not m:
-        msg = f'ERROR: "{str_date}" does not satisfy pattern "^\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)"'
-        raise RuntimeError(msg)
-
+    m = re.match(r'\s*(\d\d\d\d)\-(\d\d)\-(\d\d)\s+(\d\d):(\d\d):(\d\d)', str_date)
     year, month, day, hour, minute, second = int(m.group(1)), \
                                              int(m.group(2)), \
                                              int(m.group(3)), \
@@ -18,12 +15,12 @@ def parse_date(str_date):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--days", type=int, default=0, help="number of days to add")
     parser.add_argument("--date", type=str, default='', help="date in YYYY-MM-DD HH:mm:ss format")
+    parser.add_argument("--run_dir", type=str, default='', help="run directory")
     args = parser.parse_args()
     dt = parse_date(args.date)
-    dt += datetime.timedelta(days=args.days)
-    print(f'{dt.year:04d}-{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}')
+    filename = f'{args.run_dir}/wrfrst_d01_{dt.year:04d}-{dt.month:02d}-{dt.day:02d}_{dt.hour:02d}_{dt.minute:02d}_{dt.second:02d}'
+    Path(filename).touch()
 
 
 if __name__ == '__main__':
