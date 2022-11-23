@@ -57,8 +57,13 @@ def main():
                         else:
                             edited_line = x + '_' + y + f' = {data[x][y]:02d},\n'
                             break
-            
+
+            m = re.match(r'^\s*restart\s*=', line)
+            if m:
+                edited_line = ' restart = .true.,\n'
+
             print(edited_line, end='')
+
 
 
 if __name__ == '__main__':
