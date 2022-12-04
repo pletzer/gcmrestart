@@ -1,0 +1,34 @@
+[scheduler]
+[scheduling]
+    cycling mode = integer
+    [[graph]]
+        R1 = """
+            install => continue?
+             """
+        P1 = """
+            pop_filename[-P1] => continue?
+            continue:succeed? => transfer_file => update_list => pop_filename
+            continue:fail? => finish
+        """
+[runtime]
+    [[root]]
+        [[[environment]]]
+    [[install]]
+        script = """
+        """
+    [[pop_filename]]
+        script = """
+        """
+    [[continue]]
+        script = """
+        """
+    [[transfer_file]]
+        script = """
+        """
+    [[update_list]]
+        script = """
+        """
+    [[finish]]
+        script = """
+        echo "All done!"
+        """
