@@ -3,7 +3,7 @@
     cycling mode = integer
     [[graph]]
         R1 = """
-            install => continue?
+            prepare => continue?
              """
         P1 = """
             pop_filename[-P1] => continue?
@@ -13,20 +13,41 @@
 [runtime]
     [[root]]
         [[[environment]]]
-    [[install]]
+           TOP_DIR = /Users/pletzera/gcmrestart-laptop/cylc-src/scpto
+           FILE_LIST = ${TOP_DIR}/list_of_files.txt
+           DEST = "mahuika:/home/pletzera/test/scpto"
+    [[prepare]]
         script = """
+        cp "$FILE_LIST" "${FILE_LIST}.cpy"
+        tail -1 "$FILE_LIST" > "$TOP_DIR"/filename.txt
         """
     [[pop_filename]]
         script = """
+        filename=$(tail -1 "$FILE_LIST")
+        echo "$filename" > "$TOP_DIR"/filename.txt
         """
     [[continue]]
         script = """
+        filename=$(cat "$TOP_DIR"/filename.txt)
+        if [ -z "$filename" ]
+        then
+            # no more files to process
+            exit 1
+        else
+            exit 0
+        fi 
         """
     [[transfer_file]]
         script = """
+        filename=$(cat "$TOP_DIR"/filename.txt)
+        scp "$filename" "$DEST"
         """
     [[update_list]]
         script = """
+        filename=$(cat "$TOP_DIR"/filename.txt)
+        # remove the last line
+        cat "$FILE_LIST" | sed "$ d" > list_of_files2.txt
+        mv list_of_files2.txt "$FILE_LIST"
         """
     [[finish]]
         script = """

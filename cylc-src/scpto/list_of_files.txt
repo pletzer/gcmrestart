@@ -1,0 +1,3 @@
+/Users/pletzera/gcmrestart-laptop/cylc-src/scpto/a.txt
+/Users/pletzera/gcmrestart-laptop/cylc-src/scpto/b.txt
+/Users/pletzera/gcmrestart-laptop/cylc-src/scpto/c.txt
